@@ -1,5 +1,5 @@
 import XCTest
-//@testable import taglib
+@testable import taglib_c
 
 final class CXXTagLibTests: XCTestCase {
     func testExample() throws {
