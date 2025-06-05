@@ -5,6 +5,7 @@ module taglib {
 	header "taglib/fileref.h"
 	header "taglib/audioproperties.h"
 	header "taglib/taglib_export.h"
+	header "taglib/taglib_config.h"
 	header "taglib/taglib.h"
 	header "taglib/tstring.h"
 	header "taglib/tlist.h"
@@ -113,6 +114,9 @@ module taglib {
 	header "taglib/dsdifffile.h"
 	header "taglib/dsdiffproperties.h"
 	header "taglib/dsdiffdiintag.h"
+	header "taglib/shortenfile.h"
+	header "taglib/shortenproperties.h"
+	header "taglib/shortentag.h"
 
 	export *
 }
