@@ -1,6 +1,6 @@
 /***************************************************************************
-    copyright            : (C) 2013 by Tsuda Kageyu
-    email                : tsuda.kageyu@gmail.com
+ copyright           : (C) 2020-2024 Stephen F. Booth
+ email               : me@sbooth.org
  ***************************************************************************/
 
 /***************************************************************************
@@ -23,54 +23,92 @@
  *   http://www.mozilla.org/MPL/                                           *
  ***************************************************************************/
 
-#ifndef TAGLIB_DEBUGLISTENER_H
-#define TAGLIB_DEBUGLISTENER_H
+#include "shortentag.h"
 
-#include <taglib/tstring.h>
-#include <taglib/taglib_export.h>
+#include "tpropertymap.h"
 
-namespace TagLib
+using namespace TagLib;
+
+class Shorten::Tag::TagPrivate
 {
-  //! An abstraction for the listener to the debug messages.
+};
 
-  /*!
-   * This class enables you to handle the debug messages in your preferred
-   * way by subclassing this class, reimplementing printMessage() and setting
-   * your reimplementation as the default with setDebugListener().
-   *
-   * \see setDebugListener()
-   */
-  class TAGLIB_EXPORT DebugListener
-  {
-  public:
-    DebugListener();
-    virtual ~DebugListener();
-    DebugListener(const DebugListener &) = delete;
-    DebugListener &operator=(const DebugListener &) = delete;
+Shorten::Tag::Tag() :
+  d(std::make_unique<TagPrivate>())
+{
+}
 
-    /*!
-     * When overridden in a derived class, redirects \a msg to your preferred
-     * channel such as stderr, Windows debugger or so forth.
-     */
-    virtual void printMessage(const String &msg) = 0;
+Shorten::Tag::~Tag() = default;
 
-  private:
-    class DebugListenerPrivate;
-    TAGLIB_MSVC_SUPPRESS_WARNING_NEEDS_TO_HAVE_DLL_INTERFACE
-    std::unique_ptr<DebugListenerPrivate> d;
-  };
+String Shorten::Tag::title() const
+{
+  return String();
+}
 
-  /*!
-   * Sets the listener that decides how the debug messages are redirected.
-   * If the parameter \a listener is null, the previous listener is released
-   * and the default stderr listener is restored.
-   *
-   * \note The caller is responsible for deleting the previous listener
-   * as needed after it is released.
-   *
-   * \see DebugListener
-   */
-  TAGLIB_EXPORT void setDebugListener(DebugListener *listener);
-}  // namespace TagLib
+String Shorten::Tag::artist() const
+{
+  return String();
+}
 
-#endif
+String Shorten::Tag::album() const
+{
+  return String();
+}
+
+String Shorten::Tag::comment() const
+{
+  return String();
+}
+
+String Shorten::Tag::genre() const
+{
+  return String();
+}
+
+unsigned int Shorten::Tag::year() const
+{
+  return 0;
+}
+
+unsigned int Shorten::Tag::track() const
+{
+  return 0;
+}
+
+void Shorten::Tag::setTitle(const String &)
+{
+}
+
+void Shorten::Tag::setArtist(const String &)
+{
+}
+
+void Shorten::Tag::setAlbum(const String &)
+{
+}
+
+void Shorten::Tag::setComment(const String &)
+{
+}
+
+void Shorten::Tag::setGenre(const String &)
+{
+}
+
+void Shorten::Tag::setYear(unsigned int)
+{
+}
+
+void Shorten::Tag::setTrack(unsigned int)
+{
+}
+
+PropertyMap Shorten::Tag::properties() const
+{
+  return PropertyMap{};
+}
+
+PropertyMap Shorten::Tag::setProperties(const PropertyMap &origProps)
+{
+  return PropertyMap{origProps};
+}

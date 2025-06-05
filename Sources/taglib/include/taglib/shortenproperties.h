@@ -1,6 +1,6 @@
 /***************************************************************************
-    copyright            : (C) 2013 by Tsuda Kageyu
-    email                : tsuda.kageyu@gmail.com
+    copyright           : (C) 2020-2024 Stephen F. Booth
+    email               : me@sbooth.org
  ***************************************************************************/
 
 /***************************************************************************
@@ -23,54 +23,52 @@
  *   http://www.mozilla.org/MPL/                                           *
  ***************************************************************************/
 
-#ifndef TAGLIB_DEBUGLISTENER_H
-#define TAGLIB_DEBUGLISTENER_H
+#ifndef TAGLIB_SHORTENPROPERTIES_H
+#define TAGLIB_SHORTENPROPERTIES_H
 
-#include <taglib/tstring.h>
+#include <memory>
+
 #include <taglib/taglib_export.h>
+#include <taglib/audioproperties.h>
 
-namespace TagLib
-{
-  //! An abstraction for the listener to the debug messages.
+namespace TagLib {
+  namespace Shorten {
 
-  /*!
-   * This class enables you to handle the debug messages in your preferred
-   * way by subclassing this class, reimplementing printMessage() and setting
-   * your reimplementation as the default with setDebugListener().
-   *
-   * \see setDebugListener()
-   */
-  class TAGLIB_EXPORT DebugListener
-  {
-  public:
-    DebugListener();
-    virtual ~DebugListener();
-    DebugListener(const DebugListener &) = delete;
-    DebugListener &operator=(const DebugListener &) = delete;
+    struct PropertyValues;
 
-    /*!
-     * When overridden in a derived class, redirects \a msg to your preferred
-     * channel such as stderr, Windows debugger or so forth.
-     */
-    virtual void printMessage(const String &msg) = 0;
+    //! An implementation of audio properties for Shorten
+    class TAGLIB_EXPORT Properties : public AudioProperties {
+    public:
+      Properties(const PropertyValues *values, ReadStyle style = Average);
+      ~Properties() override;
 
-  private:
-    class DebugListenerPrivate;
-    TAGLIB_MSVC_SUPPRESS_WARNING_NEEDS_TO_HAVE_DLL_INTERFACE
-    std::unique_ptr<DebugListenerPrivate> d;
-  };
+      Properties(const Properties &) = delete;
+      Properties &operator=(const Properties &) = delete;
 
-  /*!
-   * Sets the listener that decides how the debug messages are redirected.
-   * If the parameter \a listener is null, the previous listener is released
-   * and the default stderr listener is restored.
-   *
-   * \note The caller is responsible for deleting the previous listener
-   * as needed after it is released.
-   *
-   * \see DebugListener
-   */
-  TAGLIB_EXPORT void setDebugListener(DebugListener *listener);
+      int lengthInMilliseconds() const override;
+      int bitrate() const override;
+      int sampleRate() const override;
+      int channels() const override;
+
+      //! Returns the Shorten file version (1-3).
+      int shortenVersion() const;
+      //! Returns the file type (0-9).
+      //! 0 = 8-bit µ-law,
+      //! 1 = signed 8-bit PCM, 2 = unsigned 8-bit PCM,
+      //! 3 = signed big-endian 16-bit PCM, 4 = unsigned big-endian 16-bit PCM,
+      //! 5 = signed little-endian 16-bit PCM, 6 = unsigned little-endian 16-bit PCM,
+      //! 7 = 8-bit ITU-T G.711 µ-law, 8 = 8-bit µ-law,
+      //! 9 = 8-bit A-law, 10 = 8-bit ITU-T G.711 A-law
+      int fileType() const;
+      int bitsPerSample() const;
+      unsigned long sampleFrames() const;
+
+    private:
+      class PropertiesPrivate;
+      TAGLIB_MSVC_SUPPRESS_WARNING_NEEDS_TO_HAVE_DLL_INTERFACE
+      std::unique_ptr<PropertiesPrivate> d;
+    };
+  }  // namespace Shorten
 }  // namespace TagLib
 
 #endif

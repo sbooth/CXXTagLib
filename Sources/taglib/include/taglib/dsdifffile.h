@@ -26,7 +26,7 @@
 #ifndef TAGLIB_DSDIFFFILE_H
 #define TAGLIB_DSDIFFFILE_H
 
-#include <taglib/rifffile.h>
+#include <taglib/tfile.h>
 #include <taglib/id3v2tag.h>
 #include <taglib/dsdiffproperties.h>
 #include <taglib/dsdiffdiintag.h>

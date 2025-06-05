@@ -1,6 +1,6 @@
 /***************************************************************************
-    copyright            : (C) 2013 by Tsuda Kageyu
-    email                : tsuda.kageyu@gmail.com
+ copyright           : (C) 2020-2024 Stephen F. Booth
+ email               : me@sbooth.org
  ***************************************************************************/
 
 /***************************************************************************
@@ -23,54 +23,29 @@
  *   http://www.mozilla.org/MPL/                                           *
  ***************************************************************************/
 
-#ifndef TAGLIB_DEBUGLISTENER_H
-#define TAGLIB_DEBUGLISTENER_H
+#ifndef TAGLIB_SHORTENUTILS_H
+#define TAGLIB_SHORTENUTILS_H
 
-#include <taglib/tstring.h>
-#include <taglib/taglib_export.h>
+// THIS FILE IS NOT A PART OF THE TAGLIB API
 
-namespace TagLib
-{
-  //! An abstraction for the listener to the debug messages.
+#ifndef DO_NOT_DOCUMENT  // tell Doxygen not to document this header
 
-  /*!
-   * This class enables you to handle the debug messages in your preferred
-   * way by subclassing this class, reimplementing printMessage() and setting
-   * your reimplementation as the default with setDebugListener().
-   *
-   * \see setDebugListener()
-   */
-  class TAGLIB_EXPORT DebugListener
-  {
-  public:
-    DebugListener();
-    virtual ~DebugListener();
-    DebugListener(const DebugListener &) = delete;
-    DebugListener &operator=(const DebugListener &) = delete;
+namespace TagLib {
+  namespace Shorten {
 
-    /*!
-     * When overridden in a derived class, redirects \a msg to your preferred
-     * channel such as stderr, Windows debugger or so forth.
-     */
-    virtual void printMessage(const String &msg) = 0;
+    /// Values shared with \c Shorten::Properties by \c Shorten::File
+    struct PropertyValues
+    {
+      int version { 0 };
+      int fileType { 0 };
+      int channelCount { 0 };
+      int sampleRate { 0 };
+      int bitsPerSample { 0 };
+      unsigned long sampleFrames { 0 };
+    };
+  } // namespace Shorten
+} // namespace TagLib
 
-  private:
-    class DebugListenerPrivate;
-    TAGLIB_MSVC_SUPPRESS_WARNING_NEEDS_TO_HAVE_DLL_INTERFACE
-    std::unique_ptr<DebugListenerPrivate> d;
-  };
-
-  /*!
-   * Sets the listener that decides how the debug messages are redirected.
-   * If the parameter \a listener is null, the previous listener is released
-   * and the default stderr listener is restored.
-   *
-   * \note The caller is responsible for deleting the previous listener
-   * as needed after it is released.
-   *
-   * \see DebugListener
-   */
-  TAGLIB_EXPORT void setDebugListener(DebugListener *listener);
-}  // namespace TagLib
+#endif
 
 #endif
