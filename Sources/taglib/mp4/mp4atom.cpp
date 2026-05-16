@@ -37,7 +37,7 @@ namespace {
   constexpr std::array containers {
     "moov", "udta", "mdia", "meta", "ilst",
     "stbl", "minf", "moof", "traf", "trak",
-    "stsd"
+    "stsd", "stem"
   };
 } // namespace
 
@@ -51,7 +51,7 @@ public:
   AtomList children;
 };
 
-MP4::Atom::Atom(File *file)
+MP4::Atom::Atom(File *file, int depth)
   : d(std::make_unique<AtomPrivate>(file->tell()))
 {
   d->children.setAutoDelete(true);
@@ -74,17 +74,7 @@ MP4::Atom::Atom(File *file)
   }
   else if(d->length == 1) {
     // The atom has a 64-bit length.
-    if(const long long longLength = file->readBlock(8).toLongLong();
-       longLength <= LONG_MAX) {
-      // The actual length fits in long. That's always the case if long is 64-bit.
-      d->length = static_cast<long>(longLength);
-    }
-    else {
-      debug("MP4: 64-bit atoms are not supported");
-      d->length = 0;
-      file->seek(0, File::End);
-      return;
-    }
+    d->length = file->readBlock(8).toLongLong();
   }
 
   if(d->length < 8 || d->length > file->length() - d->offset) {
@@ -95,6 +85,11 @@ MP4::Atom::Atom(File *file)
   }
 
   d->name = header.mid(4, 4);
+
+  if(d->name == "stem") {
+    file->seek(d->length - 8, File::Current);
+    return;
+  }
 
   for(auto c : containers) {
     if(d->name == c) {
@@ -114,8 +109,13 @@ MP4::Atom::Atom(File *file)
       else if(d->name == "stsd") {
         file->seek(8, File::Current);
       }
+      static constexpr int MAX_MP4_ATOM_DEPTH = 64;
+      if(depth > MAX_MP4_ATOM_DEPTH) {
+        debug("MP4: Maximum nesting depth exceeded");
+        return;
+      }
       while(file->tell() < d->offset + d->length) {
-        auto child = new MP4::Atom(file);
+        auto child = new MP4::Atom(file, depth + 1);
         d->children.append(child);
         if(child->d->length == 0)
           return;
@@ -125,6 +125,11 @@ MP4::Atom::Atom(File *file)
   }
 
   file->seek(d->offset + d->length);
+}
+
+MP4::Atom::Atom(File *file)
+  : Atom(file, 0)
+{
 }
 
 MP4::Atom::~Atom() = default;
@@ -217,6 +222,8 @@ public:
 MP4::Atoms::Atoms(File *file) :
   d(std::make_unique<AtomsPrivate>())
 {
+  static constexpr int MAX_MP4_ATOM_COUNT_PER_LEVEL = 5000;
+
   d->atoms.setAutoDelete(true);
 
   file->seek(0, File::End);
@@ -227,6 +234,13 @@ MP4::Atoms::Atoms(File *file) :
     d->atoms.append(atom);
     if (atom->length() == 0)
       break;
+
+    if(d->atoms.size() > MAX_MP4_ATOM_COUNT_PER_LEVEL) {
+      debug("MP4: Maximum atom count exceeded");
+      // Make sure the file is detected as invalid.
+      d->atoms.clear();
+      break;
+    }
   }
 }
 

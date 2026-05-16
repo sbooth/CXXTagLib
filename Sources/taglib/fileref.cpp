@@ -77,6 +77,9 @@
 #ifdef TAGLIB_WITH_SHORTEN
 #include "shortenfile.h"
 #endif
+#ifdef TAGLIB_WITH_MATROSKA
+#include "matroskafile.h"
+#endif
 
 using namespace TagLib;
 
@@ -220,6 +223,10 @@ namespace
     else if(ext == "SHN")
       file = new Shorten::File(stream, readAudioProperties, audioPropertiesStyle);
 #endif
+#ifdef TAGLIB_WITH_MATROSKA
+    else if(ext == "MKA" || ext == "MKV" || ext == "WEBM")
+      file = new Matroska::File(stream, readAudioProperties, audioPropertiesStyle);
+#endif
 
     // if file is not valid, leave it to content-based detection.
 
@@ -239,8 +246,7 @@ namespace
   {
     File *file = nullptr;
 
-    if(MPEG::File::isSupported(stream))
-      file = new MPEG::File(stream, readAudioProperties, audioPropertiesStyle);
+    if(false);
 #ifdef TAGLIB_WITH_VORBIS
     else if(Ogg::Vorbis::File::isSupported(stream))
       file = new Ogg::Vorbis::File(stream, readAudioProperties, audioPropertiesStyle);
@@ -289,6 +295,12 @@ namespace
     else if(Shorten::File::isSupported(stream))
       file = new Shorten::File(stream, readAudioProperties, audioPropertiesStyle);
 #endif
+#ifdef TAGLIB_WITH_MATROSKA
+    else if(Matroska::File::isSupported(stream))
+      file = new Matroska::File(stream, readAudioProperties, audioPropertiesStyle);
+#endif
+    else if(MPEG::File::isSupported(stream))
+      file = new MPEG::File(stream, readAudioProperties, audioPropertiesStyle);
 
     // isSupported() only does a quick check, so double check the file here.
 
@@ -512,6 +524,11 @@ StringList FileRef::defaultFileExtensions()
 #endif
 #ifdef TAGLIB_WITH_SHORTEN
   l.append("shn");
+#endif
+#ifdef TAGLIB_WITH_MATROSKA
+  l.append("mkv");
+  l.append("mka");
+  l.append("webm");
 #endif
 
   return l;

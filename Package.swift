@@ -22,6 +22,8 @@ let package = Package(
 				.headerSearchPath("include/taglib"),
 				.headerSearchPath("utfcpp/source"),
 				.headerSearchPath("."),
+                .headerSearchPath("matroska"),
+                .headerSearchPath("matroska/ebml"),
 				.headerSearchPath("mod"),
 				.headerSearchPath("riff"),
 				.headerSearchPath("toolkit"),

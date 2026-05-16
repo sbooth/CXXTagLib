@@ -25,6 +25,7 @@
 
 #include "mp4itemfactory.h"
 
+#include <mutex>
 #include <utility>
 
 #include "tbytevector.h"
@@ -47,6 +48,8 @@ public:
   NameHandlerMap handlerTypeForName;
   Map<ByteVector, String> propertyKeyForName;
   Map<String, ByteVector> nameForPropertyKey;
+  mutable std::once_flag handlerMapOnce;
+  mutable std::once_flag propertyMapsOnce;
 };
 
 ItemFactory ItemFactory::factory;
@@ -87,6 +90,8 @@ std::pair<String, Item> ItemFactory::parseItem(
     return parseGnre(atom, data);
   case ItemHandlerType::Covr:
     return parseCovr(atom, data);
+  case ItemHandlerType::Stem:
+    return parseStem(atom, data);
   case ItemHandlerType::TextImplicit:
     return parseText(atom, data, -1);
   case ItemHandlerType::Text:
@@ -128,6 +133,8 @@ ByteVector ItemFactory::renderItem(
     return renderInt(name, item);
   case ItemHandlerType::Covr:
     return renderCovr(name, item);
+  case ItemHandlerType::Stem:
+    return renderStem(name, item);
   case ItemHandlerType::TextImplicit:
     return renderText(name, item, TypeImplicit);
   case ItemHandlerType::Text:
@@ -175,8 +182,8 @@ std::pair<ByteVector, Item> ItemFactory::itemFromProperty(
     case ItemHandlerType::TextImplicit:
     case ItemHandlerType::Text:
       return {name, values};
-
     case ItemHandlerType::Covr:
+    case ItemHandlerType::Stem:
       debug("MP4: Invalid item \"" + name + "\" for property");
       break;
     case ItemHandlerType::Unknown:
@@ -222,6 +229,7 @@ std::pair<String, StringList> ItemFactory::itemToProperty(
       return {key, item.toStringList()};
 
     case ItemHandlerType::Covr:
+    case ItemHandlerType::Stem:
       debug("MP4: Invalid item \"" + itemName + "\" for property");
       break;
     case ItemHandlerType::Unknown:
@@ -234,9 +242,11 @@ std::pair<String, StringList> ItemFactory::itemToProperty(
 
 String ItemFactory::propertyKeyForName(const ByteVector &name) const
 {
-  if(d->propertyKeyForName.isEmpty()) {
+  std::call_once(d->propertyMapsOnce, [this] {
     d->propertyKeyForName = namePropertyMap();
-  }
+    for(const auto &[k, t] : std::as_const(d->propertyKeyForName))
+      d->nameForPropertyKey[t] = k;
+  });
   String key = d->propertyKeyForName.value(name);
   if(key.isEmpty() && name.startsWith(freeFormPrefix)) {
     key = name.mid(std::size(freeFormPrefix) - 1);
@@ -246,14 +256,11 @@ String ItemFactory::propertyKeyForName(const ByteVector &name) const
 
 ByteVector ItemFactory::nameForPropertyKey(const String &key) const
 {
-  if(d->nameForPropertyKey.isEmpty()) {
-    if(d->propertyKeyForName.isEmpty()) {
-      d->propertyKeyForName = namePropertyMap();
-    }
-    for(const auto &[k, t] : std::as_const(d->propertyKeyForName)) {
+  std::call_once(d->propertyMapsOnce, [this] {
+    d->propertyKeyForName = namePropertyMap();
+    for(const auto &[k, t] : std::as_const(d->propertyKeyForName))
       d->nameForPropertyKey[t] = k;
-    }
-  }
+  });
   ByteVector name = d->nameForPropertyKey.value(key);
   if(name.isEmpty() && !key.isEmpty()) {
     const auto &firstChar = key[0];
@@ -303,6 +310,7 @@ ItemFactory::NameHandlerMap ItemFactory::nameHandlerMap() const
     {"akID", ItemHandlerType::Byte},
     {"gnre", ItemHandlerType::Gnre},
     {"covr", ItemHandlerType::Covr},
+    {"stem", ItemHandlerType::Stem},
     {"purl", ItemHandlerType::TextImplicit},
     {"egid", ItemHandlerType::TextImplicit},
   };
@@ -311,9 +319,9 @@ ItemFactory::NameHandlerMap ItemFactory::nameHandlerMap() const
 ItemFactory::ItemHandlerType ItemFactory::handlerTypeForName(
   const ByteVector &name) const
 {
-  if(d->handlerTypeForName.isEmpty()) {
+  std::call_once(d->handlerMapOnce, [this] {
     d->handlerTypeForName = nameHandlerMap();
-  }
+  });
   auto type = d->handlerTypeForName.value(name, ItemHandlerType::Unknown);
   if (type == ItemHandlerType::Unknown && name.size() == 4) {
     type = ItemHandlerType::Text;
@@ -633,6 +641,12 @@ std::pair<String, Item> ItemFactory::parseCovr(
   };
 }
 
+std::pair<String, Item> ItemFactory::parseStem(
+  const MP4::Atom *atom, const ByteVector &data)
+{
+  return {atom->name(), Item(Stem(data))};
+}
+
 
 ByteVector ItemFactory::renderAtom(
   const ByteVector &name, const ByteVector &data)
@@ -739,6 +753,13 @@ ByteVector ItemFactory::renderCovr(
     data.append(renderAtom("data", ByteVector::fromUInt(value.format()) +
                                    ByteVector(4, '\0') + value.data()));
   }
+  return renderAtom(name, data);
+}
+
+ByteVector ItemFactory::renderStem(
+  const ByteVector &name, const MP4::Item &item)
+{
+  auto data = item.toStem().data();
   return renderAtom(name, data);
 }
 
