@@ -19,6 +19,8 @@ let package = Package(
 		.target(
 			name: "taglib",
 			cxxSettings: [
+				.define("HAVE_GCC_BYTESWAP", to: "1"),
+				.define("HAVE_ZLIB", to: "1"),
 				.headerSearchPath("include/taglib"),
 				.headerSearchPath("utfcpp/source"),
 				.headerSearchPath("."),
