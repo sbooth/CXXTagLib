@@ -29,6 +29,9 @@ let package = Package(
 				.headerSearchPath("mod"),
 				.headerSearchPath("riff"),
 				.headerSearchPath("toolkit"),
+			],
+			linkerSettings: [
+				.linkedLibrary("z"),
 			]),
 		.testTarget(
 			name: "CXXTagLibTests",
