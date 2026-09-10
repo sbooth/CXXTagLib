@@ -49,6 +49,7 @@ namespace
   constexpr long MaxPaddingLegnth = 1024 * 1024;
 
   constexpr char LastBlockFlag = '\x80';
+  constexpr unsigned int MAX_FLAC_METADATA_BLOCK_COUNT = 50000;
 }  // namespace
 
 class FLAC::File::FilePrivate
@@ -77,6 +78,8 @@ public:
   offset_t flacStart { 0 };
   offset_t streamStart { 0 };
   bool scanned { false };
+  bool hasiXML { false };
+  bool hasBEXT { false };
 };
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -279,6 +282,10 @@ bool FLAC::File::save()
     payload.append(ByteVector::fromUInt(xml.size(), false));
     payload.append(xml);
     d->blocks.append(new UnknownMetadataBlock(MetadataBlock::Application, payload));
+    d->hasiXML = true;
+  }
+  else {
+    d->hasiXML = false;
   }
   if(!d->bextData.isEmpty()) {
     ByteVector payload;
@@ -287,6 +294,10 @@ bool FLAC::File::save()
     payload.append(ByteVector::fromUInt(d->bextData.size(), false));
     payload.append(d->bextData);
     d->blocks.append(new UnknownMetadataBlock(MetadataBlock::Application, payload));
+    d->hasBEXT = true;
+  }
+  else {
+    d->hasBEXT = false;
   }
 
   // Replace metadata blocks
@@ -532,12 +543,12 @@ bool FLAC::File::hasID3v2Tag() const
 
 bool FLAC::File::hasiXMLData() const
 {
-  return !d->iXMLData.isEmpty();
+  return d->hasiXML;
 }
 
 bool FLAC::File::hasBEXTData() const
 {
-  return !d->bextData.isEmpty();
+  return d->hasBEXT;
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -617,7 +628,14 @@ void FLAC::File::scan()
   nextBlockOffset += 4;
   d->flacStart = nextBlockOffset;
 
+  unsigned int blockCount = 0;
   while(true) {
+
+    if(blockCount++ >= MAX_FLAC_METADATA_BLOCK_COUNT) {
+      debug("FLAC::File::scan() -- Maximum metadata block count exceeded");
+      setValid(false);
+      return;
+    }
 
     seek(nextBlockOffset);
     const ByteVector header = readBlock(4);
@@ -719,14 +737,18 @@ void FLAC::File::scan()
       }
 
       if(innerId == "iXML") {
-        if(d->iXMLData.isEmpty())
+        if(!d->hasiXML) {
+          d->hasiXML = true;
           d->iXMLData = String(innerData, String::UTF8);
+        }
         else
           debug("FLAC::File::scan() -- multiple iXML blocks found, discarding");
       }
       else if(innerId == "bext") {
-        if(d->bextData.isEmpty())
+        if(!d->hasBEXT) {
+          d->hasBEXT = true;
           d->bextData = innerData;
+        }
         else
           debug("FLAC::File::scan() -- multiple BEXT blocks found, discarding");
       }
